@@ -1,41 +1,41 @@
-execute "Update system" do
-  command "apt-get update"
-end
+# execute "Update system" do
+  # command "apt-get update"
+# end
 
-execute "Install required system packages" do
-  command "apt-get install python-dev python-pip python-virtualenv libjpeg8 libjpeg8-dev libfreetype6 libfreetype6-dev zlib1g zlib1g-dev libpng12-0-dev libxml2-dev libxslt-dev libmemcached-dev zlib1g-dev libssl-dev build-essential -y"
-end
+# execute "Install required system packages" do
+  # command "apt-get install python-dev python-pip python-virtualenv libjpeg8 libjpeg8-dev libfreetype6 libfreetype6-dev zlib1g zlib1g-dev libpng12-0-dev libxml2-dev libxslt-dev libmemcached-dev zlib1g-dev libssl-dev build-essential -y"
+# end
 
-bash "Update locale" do
-  code <<-EOH
-  apt-get install language-pack-ru vim -y
-  locale-gen
-  update-locale LANG=ru_RU.UTF-8
-  EOH
-end
+# bash "Update locale" do
+  # code <<-EOH
+  # apt-get install language-pack-ru vim -y
+  # locale-gen
+  # update-locale LANG=ru_RU.UTF-8
+  # EOH
+# end
 
-execute "Install required postgresql packages" do
-  command "apt-get install postgresql-9.1-postgis gdal-bin binutils libgeos-c1 libgeos-dev libgdal1-dev libpq-dev -y"
-end
+# execute "Install required postgresql packages" do
+  # command "apt-get install postgresql-9.1-postgis gdal-bin binutils libgeos-c1 libgeos-dev libgdal1-dev libpq-dev -y"
+# end
 
 
-bash "create the template_postgis database template" do
-  user "postgres"
-  code <<-EOH
-  createdb -E UTF8 -U postgres template_postgis -T template0
-  createlang -d template_postgis plpgsql
-  psql -U postgres -d template_postgis -c "CREATE EXTENSION hstore;"
-  psql -U postgres -d template_postgis -f /usr/share/postgresql/9.1/contrib/postgis-1.5/postgis.sql
-  psql -U postgres -d template_postgis -f /usr/share/postgresql/9.1/contrib/postgis-1.5/spatial_ref_sys.sql
-  psql -U postgres -d template_postgis -c "select postgis_lib_version();"
-  psql -U postgres -d template_postgis -c "GRANT ALL ON geometry_columns TO PUBLIC;"
-  psql -U postgres -d template_postgis -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
-  psql -U postgres -d template_postgis -c "GRANT ALL ON geography_columns TO PUBLIC;"
-  EOH
-end
+# bash "create the template_postgis database template" do
+  # user "postgres"
+  # code <<-EOH
+  # createdb -E UTF8 -U postgres template_postgis -T template0
+  # createlang -d template_postgis plpgsql
+  # psql -U postgres -d template_postgis -c "CREATE EXTENSION hstore;"
+  # psql -U postgres -d template_postgis -f /usr/share/postgresql/9.1/contrib/postgis-1.5/postgis.sql
+  # psql -U postgres -d template_postgis -f /usr/share/postgresql/9.1/contrib/postgis-1.5/spatial_ref_sys.sql
+  # psql -U postgres -d template_postgis -c "select postgis_lib_version();"
+  # psql -U postgres -d template_postgis -c "GRANT ALL ON geometry_columns TO PUBLIC;"
+  # psql -U postgres -d template_postgis -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
+  # psql -U postgres -d template_postgis -c "GRANT ALL ON geography_columns TO PUBLIC;"
+  # EOH
+# end
 
 execute "create project db" do
-  command "sudo -u postgres createdb -T template_postgis #{node[:django][:project_name]}"
+  command "sudo -u postgres createdb -T #{node[:postgis][:template_name]} #{node[:django][:project_name]}"
 end
 
 # execute "Create db" do
