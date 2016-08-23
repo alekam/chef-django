@@ -3,10 +3,11 @@ maintainer        "Alex Kamedov"
 maintainer_email  "alex@kamedov.ru"
 license           "New BSD"
 description       "Installs needed recipies and executes commands to install python packages using pip."
-version           "0.0.2"
+version           "0.0.3"
 
 depends 'apt'
 depends 'yum'
+depends 'packages'
 depends 'postgresql'
 depends 'postgis'
 depends 'python'
