@@ -10,21 +10,17 @@
 # end
 
 
-execute "Update system" do
-  command "apt-get update"
-end
+# execute "Update system" do
+  # command "apt-get update"
+# end
 
-execute "Install required system packages" do
-  command "apt-get install python-dev python-pip python-virtualenv libjpeg8 libjpeg8-dev libfreetype6 libfreetype6-dev zlib1g zlib1g-dev libpng12-0-dev libxml2-dev libxslt-dev libmemcached-dev zlib1g-dev libssl-dev build-essential -y"
-end
-
-bash "Update locale" do
-  code <<-EOH
-  apt-get install language-pack-ru vim -y
-  locale-gen
-  update-locale LANG=ru_RU.UTF-8
-  EOH
-end
+# bash "Update locale" do
+  # code <<-EOH
+  # apt-get install language-pack-ru vim -y
+  # locale-gen
+  # update-locale LANG=ru_RU.UTF-8
+  # EOH
+# end
 #
 # # execute "Install required postgresql packages" do
   # # command "apt-get install postgresql-9.1-postgis gdal-bin binutils libgeos-c1 libgeos-dev libgdal1-dev libpq-dev -y"
@@ -49,10 +45,13 @@ end
 # execute "create project db" do
   # command "sudo -u postgres createdb -T #{node[:postgis][:template_name]} #{node[:django][:project_name]}"
 # end
-#
-execute "Create db" do
-  command "createdb --encoding=UTF8 project"
+execute "create project db" do
+  command "sudo -u postgres createdb --encoding=UTF8 #{node[:django][:project_name]}"
 end
+#
+# execute "Create db" do
+  # command "sudo -u postgres createdb --encoding=UTF8 project"
+# end
 # ALTER USER "user_name" WITH PASSWORD 'new_password';
 
 #
@@ -128,11 +127,11 @@ else
     cwd "/srv/#{node[:django][:project_name]}"
     code <<-EOH
     source ./env/bin/activate
-    pip install -r node[:django][:pip_requirements_file]
+    pip install -r #{node[:django][:pip_requirements_file]}
     EOH
   end
 end
-CREATE USER root PASSWORD 'md54297f44b13955235245b2497399d7a93';
+# CREATE USER root PASSWORD 'md54297f44b13955235245b2497399d7a93';
 #execute "Sync db" do
 #  command "./bin/django syncdb --noinput"
 #  cwd "/srv/#{node[:django][:project_name]}/"
