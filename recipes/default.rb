@@ -45,8 +45,10 @@
 # execute "create project db" do
   # command "sudo -u postgres createdb -T #{node[:postgis][:template_name]} #{node[:django][:project_name]}"
 # end
-execute "create project db" do
-  command "sudo -u postgres createdb --encoding=UTF8 #{node[:django][:project_name]}"
+if node[:django][:create_db]
+  execute "create project db" do
+    command "sudo -u postgres createdb --encoding=UTF8 #{node[:django][:project_name]}"
+  end
 end
 #
 # execute "Create db" do
