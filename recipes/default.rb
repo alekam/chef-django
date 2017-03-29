@@ -45,8 +45,10 @@
 # execute "create project db" do
   # command "sudo -u postgres createdb -T #{node[:postgis][:template_name]} #{node[:django][:project_name]}"
 # end
-execute "create project db" do
-  command "sudo -u postgres createdb --encoding=UTF8 #{node[:django][:project_name]}"
+if node[:django][:create_db]
+  execute "create project db" do
+    command "sudo -u postgres createdb --encoding=UTF8 #{node[:django][:project_name]}"
+  end
 end
 #
 # execute "Create db" do
@@ -138,10 +140,21 @@ end
 #  action :run
 #end
 
-execute "Migrate DB" do
-  command "./bin/django migrate"
-  cwd "/srv/#{node[:django][:project_name]}/"
-  action :run
+if node[:django][:create_db]
+  execute "Migrate DB" do
+    command "./bin/django migrate"
+    cwd "/srv/#{node[:django][:project_name]}/"
+    action :run
+  end
+  if node[:django][:fixtures]
+    node[:django][:fixtures].each do |fixture|
+      execute "Load fixture from file #{fixture}" do
+        command "./bin/django loaddata #{fixture}"
+        cwd "/srv/#{node[:django][:project_name]}/"
+        action :run
+      end
+    end
+  end
 end
 
 if node[:django][:collectstatic]
@@ -149,15 +162,5 @@ if node[:django][:collectstatic]
     command "./bin/django collectstatic --noinput"
     cwd "/srv/#{node[:django][:project_name]}/"
     action :run
-  end
-end
-
-if node[:django][:fixtures]
-  node[:django][:fixtures].each do |fixture|
-    execute "Load fixture from file #{fixture}" do
-      command "./bin/django loaddata #{fixture}"
-      cwd "/srv/#{node[:django][:project_name]}/"
-      action :run
-    end
   end
 end
