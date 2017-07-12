@@ -14,45 +14,10 @@ execute "Update system" do
   command "apt-get update"
 end
 
-execute "Install required system packages" do
-  command "apt-get install python-dev python-pip python-virtualenv libjpeg8 libjpeg8-dev libfreetype6 libfreetype6-dev zlib1g zlib1g-dev libpng12-0-dev libxml2-dev libxslt-dev libmemcached-dev zlib1g-dev libssl-dev build-essential -y"
-end
-
-bash "Update locale" do
-  code <<-EOH
-  apt-get install language-pack-ru vim -y
-  locale-gen
-  update-locale LANG=ru_RU.UTF-8
-  EOH
+execute "create project db" do
+  command "sudo -u postgres createdb --encoding=UTF8 #{node[:django][:project_name]}"
 end
 #
-# # execute "Install required postgresql packages" do
-  # # command "apt-get install postgresql-9.1-postgis gdal-bin binutils libgeos-c1 libgeos-dev libgdal1-dev libpq-dev -y"
-# # end
-#
-#
-# # bash "create the template_postgis database template" do
-  # # user "postgres"
-  # # code <<-EOH
-  # # createdb -E UTF8 -U postgres template_postgis -T template0
-  # # createlang -d template_postgis plpgsql
-# psql -U postgres -d template_postgis -c "CREATE EXTENSION hstore;"
-# psql -U postgres -d template_postgis -f /usr/share/postgresql/9.1/contrib/postgis-1.5/postgis.sql
-# psql -U postgres -d template_postgis -f /usr/share/postgresql/9.1/contrib/postgis-1.5/spatial_ref_sys.sql
-# psql -U postgres -d template_postgis -c "select postgis_lib_version();"
-# psql -U postgres -d template_postgis -c "GRANT ALL ON geometry_columns TO PUBLIC;"
-# psql -U postgres -d template_postgis -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
-# psql -U postgres -d template_postgis -c "GRANT ALL ON geography_columns TO PUBLIC;"
-  # # EOH
-# # end
-#
-# execute "create project db" do
-  # command "sudo -u postgres createdb -T #{node[:postgis][:template_name]} #{node[:django][:project_name]}"
-# end
-#
-execute "Create db" do
-  command "createdb --encoding=UTF8 project"
-end
 # ALTER USER "user_name" WITH PASSWORD 'new_password';
 
 #
@@ -123,42 +88,74 @@ if node[:django][:buildout]
     ./env/bin/buildout -c ./vagrant.cfg
     EOH
   end
+
+  execute "Migrate DB" do
+    command "./bin/django migrate"
+    cwd "/srv/#{node[:django][:project_name]}/"
+    action :run
+  end
+
+  if node[:django][:collectstatic]
+    execute "Collect staticfiles" do
+      command "./bin/django collectstatic --noinput"
+      cwd "/srv/#{node[:django][:project_name]}/"
+      action :run
+    end
+  end
+
+  if node[:django][:fixtures]
+    node[:django][:fixtures].each do |fixture|
+      execute "Load fixture from file #{fixture}" do
+        command "./bin/django loaddata #{fixture}"
+        cwd "/srv/#{node[:django][:project_name]}/"
+        action :run
+      end
+    end
+  end
+
 else
   bash "build enviroment" do
     cwd "/srv/#{node[:django][:project_name]}"
     code <<-EOH
     source ./env/bin/activate
-    pip install -r node[:django][:pip_requirements_file]
+    pip install -r core/#{node[:django][:pip_requirements_file]}
     EOH
   end
+
+  bash "Migrate DB" do
+    cwd "/srv/#{node[:django][:project_name]}"
+    code <<-EOH
+    source ./env/bin/activate
+    python manage.py migrate
+    EOH
+  end
+
+  if node[:django][:collectstatic]
+    bash "Collect staticfiles" do
+      cwd "/srv/#{node[:django][:project_name]}"
+      code <<-EOH
+      source ./env/bin/activate
+      python manage.py collectstatic --noinput"
+      EOH
+    end
+  end
+
+  if node[:django][:fixtures]
+    node[:django][:fixtures].each do |fixture|
+      bash "Load fixture from file #{fixture}" do
+        cwd "/srv/#{node[:django][:project_name]}"
+        code <<-EOH
+        source ./env/bin/activate
+        python manage.py loaddata #{fixture}"
+        EOH
+      end
+    end
+  end
+
 end
-CREATE USER root PASSWORD 'md54297f44b13955235245b2497399d7a93';
+# CREATE USER root PASSWORD 'md54297f44b13955235245b2497399d7a93';
 #execute "Sync db" do
 #  command "./bin/django syncdb --noinput"
 #  cwd "/srv/#{node[:django][:project_name]}/"
 #  action :run
 #end
-
-execute "Migrate DB" do
-  command "./bin/django migrate"
-  cwd "/srv/#{node[:django][:project_name]}/"
-  action :run
-end
-
-if node[:django][:collectstatic]
-  execute "Collect staticfiles" do
-    command "./bin/django collectstatic --noinput"
-    cwd "/srv/#{node[:django][:project_name]}/"
-    action :run
-  end
-end
-
-if node[:django][:fixtures]
-  node[:django][:fixtures].each do |fixture|
-    execute "Load fixture from file #{fixture}" do
-      command "./bin/django loaddata #{fixture}"
-      cwd "/srv/#{node[:django][:project_name]}/"
-      action :run
-    end
-  end
-end

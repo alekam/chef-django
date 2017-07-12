@@ -9,8 +9,7 @@ depends 'apt'
 depends 'yum'
 depends 'packages'
 depends 'postgresql'
-depends 'postgis'
-depends 'python'
+depends 'poise-python'
 
 recipe "django", "Installs several python packages via pip"
 
