@@ -8,14 +8,15 @@
 # sudo apt-get install postgresql-9.3 postgresql-contrib-9.3
   # EOH
 # end
+#
+# execute "Update system" do
+  # command "apt-get update"
+# end
 
-
-execute "Update system" do
-  command "apt-get update"
-end
-
-execute "create project db" do
-  command "sudo -u postgres createdb --encoding=UTF8 #{node[:django][:project_name]}"
+if node[:django][:create_db]
+  execute "create project db" do
+    command "sudo -u postgres createdb --encoding=UTF8 #{node[:django][:project_name]}"
+  end
 end
 #
 # ALTER USER "user_name" WITH PASSWORD 'new_password';
@@ -89,18 +90,18 @@ if node[:django][:buildout]
     EOH
   end
 
-  execute "Migrate DB" do
-    command "./bin/django migrate"
-    cwd "/srv/#{node[:django][:project_name]}/"
-    action :run
-  end
-
   if node[:django][:collectstatic]
     execute "Collect staticfiles" do
       command "./bin/django collectstatic --noinput"
       cwd "/srv/#{node[:django][:project_name]}/"
       action :run
     end
+  end
+
+  execute "Migrate DB" do
+    command "./bin/django migrate"
+    cwd "/srv/#{node[:django][:project_name]}/"
+    action :run
   end
 
   if node[:django][:fixtures]
@@ -122,6 +123,7 @@ else
     EOH
   end
 
+if node[:django][:create_db]
   bash "Migrate DB" do
     cwd "/srv/#{node[:django][:project_name]}"
     code <<-EOH
@@ -129,17 +131,6 @@ else
     python manage.py migrate
     EOH
   end
-
-  if node[:django][:collectstatic]
-    bash "Collect staticfiles" do
-      cwd "/srv/#{node[:django][:project_name]}"
-      code <<-EOH
-      source ./env/bin/activate
-      python manage.py collectstatic --noinput"
-      EOH
-    end
-  end
-
   if node[:django][:fixtures]
     node[:django][:fixtures].each do |fixture|
       bash "Load fixture from file #{fixture}" do
@@ -151,11 +142,16 @@ else
       end
     end
   end
+end
+
+  if node[:django][:collectstatic]
+    bash "Collect staticfiles" do
+      cwd "/srv/#{node[:django][:project_name]}"
+      code <<-EOH
+      source ./env/bin/activate
+      python manage.py collectstatic --noinput"
+      EOH
+    end
+  end
 
 end
-# CREATE USER root PASSWORD 'md54297f44b13955235245b2497399d7a93';
-#execute "Sync db" do
-#  command "./bin/django syncdb --noinput"
-#  cwd "/srv/#{node[:django][:project_name]}/"
-#  action :run
-#end
